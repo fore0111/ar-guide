@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>技大祭 ARガイド（画像認識版）</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --accent: #e6007e; --ink: #14213d; --panel: rgba(20, 33, 61, .82); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #0b1020; color: #fff; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; }
+  button { font: inherit; color: inherit; }
+
+  /* スタート画面 */
+  #start { position: fixed; inset: 0; overflow-y: auto; padding: 28px 16px calc(24px + env(safe-area-inset-bottom));
+    background: linear-gradient(160deg, #2b3a8f, #0b1020 70%); }
+  #start h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: .04em; }
+  #start p { margin: 0 0 16px; font-size: 14px; line-height: 1.7; opacity: .9; }
+  #gps { font-size: 12px; opacity: .75; margin-bottom: 10px; min-height: 1.4em; }
+  .point { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin-bottom: 10px; padding: 14px;
+    border: 1px solid rgba(255, 255, 255, .22); border-radius: 14px; background: rgba(255, 255, 255, .08); }
+  .point.near { border-color: var(--accent); background: rgba(230, 0, 126, .2); }
+  .point .no { flex: none; width: 40px; height: 40px; border-radius: 50%; background: #e02020; display: grid; place-items: center;
+    font-weight: 700; font-size: 18px; }
+  .point .nm { flex: 1; font-size: 15px; font-weight: 600; line-height: 1.4; }
+  .point .ds { flex: none; font-size: 12px; opacity: .8; }
+  .note { font-size: 12px; opacity: .7; }
+
+  /* AR画面 */
+  #ar { position: fixed; inset: 0; display: none; }
+  #container { position: absolute; inset: 0; overflow: hidden; }
+  #top { position: absolute; left: 0; right: 0; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px;
+    padding: calc(8px + env(safe-area-inset-top)) 10px 8px; background: linear-gradient(rgba(0, 0, 0, .6), transparent); }
+  #back { border: 0; border-radius: 999px; background: rgba(255, 255, 255, .2); padding: 8px 14px; font-size: 13px; }
+  #pname { flex: 1; font-size: 13px; font-weight: 600; text-shadow: 0 1px 3px #000; }
+  #status { position: absolute; left: 50%; top: calc(56px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 5;
+    padding: 6px 14px; border-radius: 999px; background: var(--panel); font-size: 13px; white-space: nowrap; }
+  #status.found { background: var(--accent); }
+  #bottom { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, rgba(0, 0, 0, .75) 30%); }
+  #info { margin: 0 10px 8px; padding: 10px 12px; border-radius: 12px; background: var(--panel); display: none; }
+  #info .b { font-size: 11px; opacity: .8; }
+  #info .t { font-size: 16px; font-weight: 700; margin: 2px 0; }
+  #info .d { font-size: 13px; line-height: 1.5; }
+  #info .item + .item { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .2); }
+  #guide { font-size: 11px; opacity: .85; margin: 0 10px 4px; }
+  #thumbs { display: flex; gap: 6px; overflow-x: auto; padding: 0 10px; scrollbar-width: none; }
+  #thumbs::-webkit-scrollbar { display: none; }
+  .thumb { flex: none; width: 58px; text-align: center; opacity: .8; }
+  .thumb img { width: 58px; height: 82px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; display: block; }
+  .thumb span { display: block; font-size: 9px; line-height: 1.2; margin-top: 2px; height: 2.4em; overflow: hidden; }
+  .thumb.on { opacity: 1; }
+  .thumb.on img { border-color: var(--accent); }
+  #msg { position: absolute; inset: 0; z-index: 9; display: none; place-items: center; padding: 24px; text-align: center;
+    background: rgba(11, 16, 32, .92); font-size: 15px; line-height: 1.8; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/addons/renderers/CSS3DRenderer.js": "./vendor/CSS3DRenderer.js"
+} }
+</script>
+</head>
+<body>
+
+<section id="start">
+  <h1>技大祭 ARガイド</h1>
+  <p>現在の地点を選択し、カメラを周囲の建物へ向けると、企画の情報が建物の上に表示されます。</p>
+  <div id="gps">現在地を確認中…</div>
+  <div id="points"></div>
+  <p class="note"><a href="./" style="color:#fff">← 通常版（全域対応）へ戻る</a></p>
+  <p class="note">カメラと位置情報の利用許可が必要です。映像は端末内で処理し、送信しません。</p>
+</section>
+
+<section id="ar">
+  <div id="container"></div>
+  <div id="top"><button id="back">← 地点選択</button><div id="pname"></div></div>
+  <div id="status">準備中…</div>
+  <div id="bottom">
+    <div id="info"></div>
+    <div id="guide">下の写真と同一の景色を映してください（地点の中心に立って撮影）</div>
+    <div id="thumbs"></div>
+  </div>
+  <div id="msg"></div>
+</section>
+
+<script type="module">
+import * as THREE from 'three';
+import { MindARThree } from './vendor/mindar-image-three.prod.js';
+
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const DEBUG = params.has('debug');
+const state = { point: null, found: new Set(), started: false };
+window.__ar = state; // 動作確認用
+
+const data = await (await fetch('data/points.json')).json();
+const points = data.points;
+
+// ---------- スタート画面 ----------
+const distance = (a, b) => {
+  const R = 6371000, rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+};
+
+function renderPoints(here) {
+  const list = points.map((p) => ({ p, d: here ? distance(here, p) : null }));
+  if (here) list.sort((a, b) => a.d - b.d);
+  $('points').replaceChildren(...list.map(({ p, d }, i) => {
+    const b = document.createElement('button');
+    b.className = 'point' + (here && i === 0 && d < 60 ? ' near' : '');
+    b.innerHTML = `<span class="no">${p.id}</span><span class="nm"></span><span class="ds"></span>`;
+    b.querySelector('.nm').textContent = p.name.replace(/^地点\d+\s*/, '');
+    b.querySelector('.ds').textContent = d == null ? '' : d < 1000 ? `約${Math.round(d)}m` : `${(d / 1000).toFixed(1)}km`;
+    b.onclick = () => startAR(p);
+    return b;
+  }));
+}
+renderPoints(null);
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const here = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      renderPoints(here);
+      $('gps').textContent = `現在地から近接順に表示中（誤差 ±${Math.round(pos.coords.accuracy)}m）`;
+    },
+    () => { $('gps').textContent = '現在地を取得不可。地図の番号から地点を選択してください。'; },
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 },
+  );
+} else {
+  $('gps').textContent = '地図の番号から地点を選択してください。';
+}
+
+// ---------- ラベル描画（Canvas → テクスチャ） ----------
+function wrap(ctx, text, maxW) {
+  const lines = []; let line = '';
+  for (const ch of text) {
+    if (ctx.measureText(line + ch).width > maxW && line) { lines.push(line); line = ch; } else line += ch;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+function makeLabel(label) {
+  const W = 640, PAD = 28, TAIL = 26, inner = W - PAD * 2;
+  const F = '"Hiragino Sans","Noto Sans JP",sans-serif';
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  const rows = [];
+  const add = (text, font, color, lh, max) => {
+    if (!text) return;
+    ctx.font = font;
+    wrap(ctx, text, inner).slice(0, max).forEach((t) => rows.push({ t, font, color, lh }));
+  };
+  add(label.building, `600 26px ${F}`, '#e6007e', 36, 1);
+  add(label.title, `800 44px ${F}`, '#14213d', 58, 2);
+  add(label.desc, `500 30px ${F}`, '#333', 42, 2);
+  add(label.time, `600 28px ${F}`, '#2b3a8f', 40, 1);
+  const bodyH = PAD * 2 + rows.reduce((s, r) => s + r.lh, 0);
+  c.width = W; c.height = bodyH + TAIL;
+
+  ctx.fillStyle = 'rgba(255,255,255,.93)';
+  ctx.strokeStyle = '#e6007e'; ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(3, 3, W - 6, bodyH - 6, 24);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); // 吹き出しの先端
+  ctx.moveTo(W / 2 - 22, bodyH - 4); ctx.lineTo(W / 2, bodyH + TAIL - 2); ctx.lineTo(W / 2 + 22, bodyH - 4);
+  ctx.fillStyle = '#e6007e'; ctx.fill();
+
+  let y = PAD;
+  ctx.textBaseline = 'middle';
+  for (const r of rows) { ctx.font = r.font; ctx.fillStyle = r.color; ctx.fillText(r.t, PAD, y + r.lh / 2); y += r.lh; }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  const w = 0.5, h = w * c.height / c.width; // ターゲット幅 = 1
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false }),
+  );
+  mesh.userData.h = h;
+  return mesh;
+}
+
+// ---------- AR ----------
+function showMsg(html) { $('msg').innerHTML = html; $('msg').style.display = 'grid'; }
+
+function updateUI() {
+  const p = state.point;
+  const found = [...state.found];
+  $('status').className = found.length ? 'found' : '';
+  $('status').textContent = found.length ? '建物を認識中' : '建物を探しています…';
+  document.querySelectorAll('.thumb').forEach((el, i) => el.classList.toggle('on', state.found.has(i)));
+  const info = $('info');
+  if (!found.length) { info.style.display = 'none'; return; }
+  const seen = new Set();
+  const items = found.flatMap((i) => p.targets[i].labels).filter((l) => !seen.has(l.title) && seen.add(l.title));
+  info.replaceChildren(...items.map((l) => {
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = '<div class="b"></div><div class="t"></div><div class="d"></div>';
+    d.querySelector('.b').textContent = l.building || '';
+    d.querySelector('.t').textContent = l.title;
+    d.querySelector('.d').textContent = [l.desc, l.time].filter(Boolean).join(' ／ ');
+    return d;
+  }));
+  info.style.display = 'block';
+}
+
+async function startAR(p) {
+  if (state.started) return;
+  state.started = true; state.point = p;
+  $('start').style.display = 'none';
+  $('ar').style.display = 'block';
+  $('pname').textContent = p.name;
+  $('status').textContent = 'カメラと認識データを準備中…';
+
+  $('thumbs').replaceChildren(...p.targets.map((t) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    d.innerHTML = '<img alt=""><span></span>';
+    d.querySelector('img').src = 'targets/' + t.file;
+    d.querySelector('span').textContent = t.hint || '';
+    return d;
+  }));
+
+  const manifest = await (await fetch('targets/manifest.json')).json();
+  const aspects = manifest[p.id].map((m) => m.aspect);
+
+  const mindar = new MindARThree({
+    container: $('container'),
+    imageTargetSrc: p.mind,
+    maxTrack: 1,
+    uiLoading: 'no', uiScanning: 'no', uiError: 'no',
+    filterMinCF: 0.0005, filterBeta: 0.005,
+    warmupTolerance: 3, missTolerance: 8,
+  });
+  const { renderer, scene, camera } = mindar;
+
+  p.targets.forEach((t, i) => {
+    const anchor = mindar.addAnchor(i);
+    const a = aspects[i]; // 高さ ÷ 幅。アンカーの座標系は幅 = 1、中心が原点、上が +y
+    for (const l of t.labels) {
+      const mesh = makeLabel(l);
+      // 吹き出しの先端が (u, v) を指示する配置
+      mesh.position.set(l.u - 0.5, (0.5 - l.v) * a + mesh.userData.h / 2, 0);
+      anchor.group.add(mesh);
+    }
+    if (DEBUG) {
+      const frame = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, a)),
+        new THREE.LineBasicMaterial({ color: 0x00ff88 }),
+      );
+      anchor.group.add(frame);
+    }
+    anchor.onTargetFound = () => { state.found.add(i); updateUI(); };
+    anchor.onTargetLost = () => { state.found.delete(i); updateUI(); };
+  });
+
+  try {
+    await mindar.start();
+  } catch (e) {
+    console.error(e);
+    showMsg('カメラを起動不可。<br>ブラウザの設定でカメラの利用を許可し、<br>ページを再読込してください。<br>（HTTPS での接続が必要）');
+    return;
+  }
+  state.ready = true;
+  updateUI();
+  renderer.setAnimationLoop(() => renderer.render(scene, camera));
+}
+
+$('back').onclick = () => location.reload();
+
+// ?p=地点番号 で直接起動（QRコード用）
+const direct = points.find((p) => p.id === params.get('p'));
+if (direct) startAR(direct);
+</script>
+</body>
+</html>

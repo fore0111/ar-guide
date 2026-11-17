@@ -14,7 +14,7 @@ try {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()); });
-  await page.goto(`http://localhost:8766/index.html?p=${point}&debug`);
+  await page.goto(`http://localhost:8766/image.html?p=${point}&debug`);
   await page.waitForFunction('window.__ar && window.__ar.ready', { timeout: 60000 });
   let found = [];
   for (let i = 0; i < 40 && !found.length; i++) {
