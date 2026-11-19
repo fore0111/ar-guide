@@ -1,2 +1,5 @@
 node_modules/
 tools/.cert/
+pv/media
+pv/out/cache/
+.DS_Store

@@ -19,6 +19,8 @@
   #go { margin-top: 8px; padding: 16px; border-radius: 14px; background: var(--accent); font-size: 17px; font-weight: 700; }
   #start a { color: #fff; font-size: 12px; opacity: .7; }
   #start .note { font-size: 12px; opacity: .7; }
+  #start .destin { padding: 10px 14px; border-radius: 12px; background: rgba(255, 180, 0, .18); border: 1px solid #ffb400; font-size: 14px; line-height: 1.6; }
+  #start .destin[hidden] { display: none; }
 
   #video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #1a2238; }
   #overlay { position: fixed; inset: 0; overflow: hidden; touch-action: none; }
@@ -101,6 +103,7 @@
 <section id="start">
   <h1>技大祭 ARガイド</h1>
   <p>カメラを周囲へ向けると、企画の開催場所が方向と距離で表示されます。会場の全域で利用可能です。</p>
+  <p class="destin" id="destin" hidden></p>
   <button id="go">カメラを起動</button>
   <p class="note">カメラ・位置情報・方位センサーの利用許可が必要です。映像と位置は端末内で処理し、送信しません。</p>
   <a href="image.html">画像認識版（実験・登録4地点限定）</a>
@@ -134,7 +137,7 @@ const state = {
   hx: 0, hy: 1, pitch: 0,          // 平滑化済みの方位ベクトルと仰角（度）
   hasHeading: false,
   offset: Number(store.get('headingOffset')) || 0, // 利用者による方位補正（度）
-  dest: null, front: null, f: 600,
+  dest: null, destEv: 0, front: null, f: 600,
 };
 window.__geo = state; // 動作確認用
 const heading = () => (Math.atan2(state.hx, state.hy) / RAD + state.offset + 360) % 360;
@@ -294,7 +297,7 @@ function updateGuide(hd) {
   g.style.display = 'flex';
   $('arrow').style.transform = `rotate(${d < NEAR ? 0 : dAz}deg)`;
   const dir = d < NEAR ? '到着' : Math.abs(dAz) < 12 ? '正面' : Math.abs(dAz) > 150 ? '後方' : dAz > 0 ? '右' : '左';
-  $('gtext').textContent = d < NEAR ? `${state.dest.name} 付近に到着` : `${dir} ${fmtD(d)} ・ ${state.dest.events[0].title}`;
+  $('gtext').textContent = d < NEAR ? `${state.dest.name} 付近に到着` : `${dir} ${fmtD(d)} ・ ${(state.dest.events[state.destEv] || state.dest.events[0]).title}`;
 }
 $('gstop').onclick = () => { state.dest = null; };
 
@@ -361,7 +364,7 @@ function openPoi(p) {
     (p.verify ? '<div class="r" style="font-size:11px;color:#889;margin-top:6px">※位置は概略</div>' : '');
   const nav = document.createElement('button');
   nav.className = 'nav'; nav.textContent = 'この場所へ案内';
-  nav.onclick = () => { state.dest = p; sheet.style.display = 'none'; };
+  nav.onclick = () => { state.dest = p; state.destEv = 0; sheet.style.display = 'none'; };
   const back = document.createElement('button');
   back.className = 'nav ghost'; back.textContent = '一覧を表示';
   back.onclick = openList;
@@ -462,6 +465,16 @@ async function start() {
   }
   updateFocal();
   requestAnimationFrame(frame);
+}
+// 地図画面（NAsVI マップ）から渡された目的地: ?dest=<events.json の id>&ev=<企画の番号>
+{
+  const p = pois.find((x) => x.id === params.get('dest'));
+  if (p) {
+    state.dest = p;
+    state.destEv = Math.min(p.events.length - 1, Math.max(0, Number(params.get('ev')) || 0));
+    $('destin').textContent = `目的地：${p.events[state.destEv].title}（${p.name}）。起動後、方向と距離で案内します。`;
+    $('destin').hidden = false;
+  }
 }
 $('go').onclick = start;
 if (params.get('sim')) start();
