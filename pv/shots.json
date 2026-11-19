@@ -1,0 +1,15 @@
+{
+  "_説明": "src は pv/ からの相対パス。画面録画は media/（= hackson/PV素材）へ配置し、src を差し替える。動画は in で開始秒を指定。pt は画面内で引出線が指す位置（0〜1）。",
+  "slots": {
+    "scene1":       { "src": "assets/scene_tower.jpg" },
+    "scene2":       { "src": "assets/scene_road.jpg" },
+    "scene3":       { "src": "assets/scene_lecture.jpg" },
+    "scene4":       { "src": "assets/scene_denki.jpg" },
+    "scene5":       { "src": "assets/scene_library2.jpg" },
+    "scene6":       { "src": "assets/scene_welfare.jpg" },
+    "screenFront":  { "src": "placeholder/screen_front.png",  "pt": [0.35, 0.88] },
+    "screenLabels": { "src": "placeholder/screen_labels.png", "pt": [0.32, 0.33] },
+    "screenFar":    { "src": "placeholder/screen_far.png",    "pt": [0.2, 0.16] },
+    "screenGuide":  { "src": "placeholder/screen_guide.png",  "pt": [0.5, 0.11] }
+  }
+}
