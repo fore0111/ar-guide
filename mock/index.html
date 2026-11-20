@@ -83,6 +83,16 @@
   .row .m { margin-left: auto; flex: none; font: 600 12px var(--en); color: var(--sub); }
   .empty { padding: 16px; font-size: 13px; color: var(--sub); }
 
+  /* ---------- 絞り込み（Labeling.filtering） ---------- */
+  .chips { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; height: 32px; padding: 0 12px; border-radius: 16px; font-size: 13px; font-weight: 700;
+    background: var(--panel); border: 1px solid var(--line); color: var(--sub);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  }
+  .chip[aria-pressed="true"] { background: var(--lilac); border-color: var(--lilac); color: var(--ink); }
+
   /* ---------- 地図の操作ボタン ---------- */
   .ctrl { position: absolute; right: 16px; z-index: 4; display: flex; flex-direction: column; gap: 8px; transition: bottom 0.25s; }
   .ctrl button {
@@ -114,7 +124,48 @@
     flex: 1; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
     background: var(--yel); color: var(--ink); font-size: 15px; font-weight: 800; text-decoration: none;
   }
+  .card .tags { display: flex; gap: 8px; margin-top: 10px; }
+  .tagbtn { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--sub); }
+  .tagbtn[aria-pressed="true"] { background: rgba(167,139,250,.22); border-color: var(--lilac); color: var(--text); }
+  .card .mode { font-size: 12px; color: var(--yel); font-weight: 700; }
+  .card .stop { height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--line); font-size: 14px; font-weight: 700; color: var(--sub); }
+  .card .go[hidden], .card .stop[hidden], .card .mode[hidden] { display: none; }
+  .card .go { border: 0; cursor: pointer; }
+  .band {
+    position: absolute; left: 12px; right: 12px; bottom: 12px; z-index: 3; padding: 14px 16px;
+    background: var(--panel-solid); border: 1px solid var(--yel); border-radius: 16px;
+  }
+  .band[hidden] { display: none; }
+  .band b { font-size: 15px; }
+  .band p { margin-top: 4px; font-size: 12px; color: var(--sub); line-height: 1.5; }
+  .band .bact { display: flex; gap: 8px; margin-top: 10px; }
+  .band .bact button { flex: 1; height: 40px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+  .band .bact button:first-child { background: var(--yel); color: var(--ink); border: 0; }
   .card .close { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; border: 1px solid var(--line); color: var(--sub); }
+
+  /* ---------- スタンプ ---------- */
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 8; max-height: 72%; overflow-y: auto;
+    padding: 16px 16px 20px; background: var(--panel-solid); border-top: 1px solid var(--line); border-radius: 18px 18px 0 0;
+  }
+  .sheet[hidden] { display: none; }
+  .sheet h3 { font-size: 15px; font-weight: 800; }
+  .sheet .note { margin-top: 4px; font-size: 12px; color: var(--sub); line-height: 1.45; }
+  .kinds { display: grid; gap: 8px; margin-top: 6px; }
+  .kinds.five { grid-template-columns: repeat(5, 1fr); }
+  .kinds.three { grid-template-columns: repeat(3, 1fr); }
+  .scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; color: var(--sub); }
+  .kind { height: 44px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+  .kind:active { background: rgba(167,139,250,.2); }
+  .sheet h4 { margin: 16px 0 6px; font-size: 12px; font-weight: 700; color: var(--sub); }
+  .stl { list-style: none; border: 1px solid var(--line); border-radius: 12px; }
+  .stl li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; }
+  .stl li + li { border-top: 1px solid var(--line); }
+  .stl .k { font-weight: 800; }
+  .stl .a { margin-left: auto; color: var(--sub); font: 600 12px var(--en); }
+  .stl button { height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--sub); }
+  .toast { position: absolute; left: 50%; top: 130px; z-index: 9; transform: translateX(-50%); padding: 8px 14px; border-radius: 10px; background: var(--panel-solid); border: 1px solid var(--line); font-size: 13px; font-weight: 700; }
+  .toast[hidden] { display: none; }
 
   /* ---------- 企画一覧（左タブ） ---------- */
   .list {
@@ -158,10 +209,20 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
       </label>
+      <div class="chips" id="chips" role="group" aria-label="絞り込み">
+        <button class="chip" type="button" data-k="飲食" aria-pressed="false">飲食</button>
+        <button class="chip" type="button" data-k="展示" aria-pressed="false">展示</button>
+        <button class="chip" type="button" data-k="体験" aria-pressed="false">体験</button>
+        <button class="chip" type="button" data-k="ステージ" aria-pressed="false">ステージ</button>
+        <button class="chip" type="button" data-fav="1" aria-pressed="false">お気に入り</button>
+      </div>
       <ul class="results" id="results" hidden></ul>
     </header>
 
     <div class="ctrl" id="ctrl">
+      <button id="stampBtn" type="button" aria-label="スタンプ">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f4f0ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4h6v6l3 3v2H6v-2l3-3z"/><path d="M5 20h14"/></svg>
+      </button>
       <button id="compass" type="button" aria-label="向きを戻す">
         <svg width="22" height="22" viewBox="0 0 24 24"><path d="M12 3 15 12H9z" fill="#ff6b6b"/><path d="M12 21 9 12h6z" fill="#b4a9cf"/></svg>
       </button>
@@ -169,6 +230,12 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f4f0ff" stroke-width="2" stroke-linejoin="round"><path d="M20 4 4 11l7 2 2 7z"/></svg>
       </button>
     </div>
+
+    <section class="band" id="noloc" hidden>
+      <b>現在地が使えません</b>
+      <p>行き先への方角と距離、スタンプは使えません。検索・一覧・場所の情報は、このまま使えます。</p>
+      <div class="bact"><button type="button" id="allow">位置の利用を許可</button><button type="button" id="manual">地図で指定する</button></div>
+    </section>
 
     <section class="card off" id="card" aria-live="polite">
       <div class="head">
@@ -179,11 +246,16 @@
         </div>
         <div class="dist"><b id="cDist"></b><span id="cTime"></span></div>
       </div>
+      <div class="tags" id="tagRow">
+        <button class="tagbtn" id="tFav" type="button" aria-pressed="false">お気に入り</button>
+      </div>
       <div class="act">
-        <a class="go" id="cGo" href="../index.html">
+        <button class="go" id="cHere" type="button">ここへ向かう</button>
+        <a class="go" id="cGo" href="../index.html" hidden>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
-          ARで案内する
+          カメラで見る
         </a>
+        <button class="stop" id="cStop" type="button" hidden>案内をやめる</button>
         <button class="close" id="cClose" type="button" aria-label="閉じる">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
@@ -191,12 +263,25 @@
     </section>
 
     <section class="list" id="list" hidden></section>
+
+    <section class="sheet" id="sheet" hidden aria-label="スタンプ">
+      <h3>足元にスタンプを押す</h3>
+      <p class="note" id="sNote"></p>
+      <h4>混み具合</h4>
+      <div class="kinds five" id="kindsC"></div>
+      <div class="scale"><span>空いている</span><span>とても混んでいる</span></div>
+      <h4>感想</h4>
+      <div class="kinds three" id="kindsF"></div>
+      <h4>自分が押したスタンプ</h4>
+      <ul class="stl" id="stl"></ul>
+    </section>
+    <p class="toast" id="toast" hidden></p>
   </main>
 
   <nav class="tabs" aria-label="画面の切り替え">
     <button class="tab" id="tabList" type="button">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></svg>
-      企画
+      一覧
     </button>
     <button class="tab" id="tabMap" type="button" aria-current="page">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3 21 8l-9 5-9-5z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></svg>
@@ -204,7 +289,7 @@
     </button>
     <a class="tab" id="tabAR" href="../index.html">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
-      AR
+      カメラ
     </a>
   </nav>
 </div>
@@ -238,6 +323,34 @@ const pois = eData.pois.map((p) => {
   return o;
 });
 const items = pois.flatMap((poi) => poi.events.map((ev) => ({ poi, ev })));
+
+// ---------- 自分用タグと絞り込み（Labeling）。保存先は端末内（来場者の識別方法は OQ-12） ----------
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const tags = store.get('nasvi.tags', { fav: [] });   // 「行きたい」は、ワイヤーフレームに無いため画面に出していない(要確認)   // 値は「場所 id:企画の番号」の配列
+const itemKey = (poi, ev) => `${poi.id}:${poi.events.indexOf(ev)}`;
+const hasTag = (t, poi, ev) => tags[t].includes(itemKey(poi, ev));
+const filtering = { kind: null, fav: false };   // 絞り込みステータス(種類は 1 つ、お気に入りは重ねがけ)
+const itemShown = (poi, ev) => (!filtering.kind || ev.kind === filtering.kind) && (!filtering.fav || hasTag('fav', poi, ev));
+const poiShown = (poi) => poi.events.some((ev) => itemShown(poi, ev));
+
+// ---------- スタンプ（Stamp）。他の来場者の分は模擬データ。共有の保存先は未決(OQ-12) ----------
+const KINDS = ['混雑1', '混雑2', '混雑3', '混雑4', '混雑5', '面白い', '美味しい', 'よさ'];   // 種類は OQ-4
+const STALE_MIN = 30;   // 混雑スタンプを古いとみなす時間(仮置き。OQ-4)
+const isCong = (k) => k.startsWith('混雑');
+const now = () => Date.now();
+const stamps = [
+  { id: 's1', kind: '混雑4', xy: [-30, 20], at: now() - 6 * 60e3, mine: false },
+  { id: 's2', kind: '美味しい', xy: [40, -10], at: now() - 14 * 60e3, mine: false },
+  { id: 's3', kind: '混雑2', xy: [10, 60], at: now() - 50 * 60e3, mine: false },   // 古い混雑スタンプ(表示しない)
+  { id: 's4', kind: '面白い', xy: [-60, -40], at: now() - 50 * 60e3, mine: false },
+  ...store.get('nasvi.stamps', []).map((x) => ({ ...x, mine: true })),
+];
+const stampVisible = (st) => !isCong(st.kind) || now() - st.at <= STALE_MIN * 60e3;
+const ago = (t) => { const m = Math.max(0, Math.round((now() - t) / 60e3)); return m < 1 ? 'たった今' : `${m} 分前`; };
+const saveStamps = () => store.set('nasvi.stamps', stamps.filter((x) => x.mine).map(({ id, kind, xy, at }) => ({ id, kind, xy, at })));
 
 // ---------- 経路探索（3m 格子の A*。pv.js と同一の方式） ----------
 const inPoly = (x, y, pts) => {
@@ -325,7 +438,9 @@ const TILT = 0.52, ZS = 0.9, TH0 = -0.5;
 const HOME = (() => { const b = pois.filter((p) => Math.hypot(...p.xy) < 260); return [b.reduce((a, p) => a + p.xy[0], 0) / b.length, b.reduce((a, p) => a + p.xy[1], 0) / b.length]; })();
 const view = { fx: HOME[0] + 35, fy: HOME[1] - 50, k: 1.5, th: TH0, cy: 0 };
 const goal = { ...view };
-const state = { dest: null, route: null, routeT0: 0 };
+const state = { dest: null, route: null, routeT0: 0 };   // dest: 選んだ場所。route があれば案内中
+const POS_OK = !new URLSearchParams(location.search).has('noloc');   // ?noloc で「位置が使えない」状態を確認
+const DIR8 = ['北', '北東', '東', '南東', '南', '南西', '西', '北西'];
 let labelHits = [];
 
 function resize() {
@@ -339,7 +454,7 @@ function resize() {
 }
 const cardH = () => ($('card').classList.contains('off') ? 0 : $('card').offsetHeight + 12);
 const defaultCy = () => (76 + (H - cardH())) / 2;
-function placeCtrl() { $('ctrl').style.bottom = `${cardH() + 12}px`; }
+function placeCtrl() { const band = !$('noloc').hidden && $('noloc').style.display !== 'none' ? $('noloc').offsetHeight + 12 : 0; $('ctrl').style.bottom = `${Math.max(cardH(), band) + 12}px`; }
 
 const cosSin = () => [Math.cos(view.th), Math.sin(view.th)];
 function project(x, y, z = 0) {
@@ -384,7 +499,7 @@ function draw(t) {
   const list = blds.map((b) => ({ b, d: project(b.c[0], b.c[1])[2] })).sort((a, b) => b.d - a.d);
   const lw = clamp(view.k * 0.45, 0.6, 1.3);
   for (const { b } of list) {
-    const isDest = b === destB, isP = !!b.poi;
+    const isDest = b === destB, isP = !!b.poi && poiShown(b.poi);
     const base = b.pts.map(([x, y]) => project(x, y)), top = b.pts.map(([x, y]) => project(x, y, b.hgt));
     b.top = top;
     ctx.lineWidth = lw;
@@ -403,7 +518,7 @@ function draw(t) {
 
   // 屋外の企画（地面の円）
   for (const p of pois) {
-    if (p.b) continue;
+    if (p.b || !poiShown(p)) continue;
     const [x, y] = project(p.xy[0], p.xy[1]), r = Math.max(4, view.k * 4);
     const on = state.dest?.poi === p;
     ctx.beginPath(); ctx.ellipse(x, y, r * 1.8, r * 1.8 * TILT, 0, 0, 7);
@@ -420,6 +535,7 @@ function draw(t) {
     ctx.beginPath(); ctx.ellipse(x, y, r, r * TILT, 0, 0, 7); ctx.stroke();
   }
 
+  drawStamps();
   drawLabels();
   drawMe(t);
   updateCompass();
@@ -434,9 +550,11 @@ function drawLabels() {
   ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
   for (const p of order) {
     const isDest = p === state.dest?.poi;
+    if (!isDest && !poiShown(p)) continue;
     if (!isDest && view.k < 1.25) continue;
-    const ev = isDest ? state.dest.ev : p.events[0];
-    const more = !isDest && p.events.length > 1 ? ` +${p.events.length - 1}` : '';
+    const shown = p.events.filter((e) => itemShown(p, e));
+    const ev = isDest ? state.dest.ev : shown[0];
+    const more = !isDest && shown.length > 1 ? ` +${shown.length - 1}` : '';
     const label = ev.title + more;
     ctx.font = `700 ${isDest ? 13 : 11}px ${JP}`;
     const tw = ctx.measureText(label).width + (isDest ? 20 : 14), th = isDest ? 26 : 22;
@@ -450,6 +568,23 @@ function drawLabels() {
     ctx.beginPath(); ctx.roundRect(r.x, r.y, r.w, r.h, 6);
     ctx.fillStyle = isDest ? C.yel : 'rgba(244,240,255,.94)'; ctx.fill();
     ctx.fillStyle = C.ink; ctx.fillText(label, x, r.y + r.h / 2 + 0.5);
+  }
+  ctx.restore();
+}
+
+// 足元のスタンプ（見えるものだけ。混雑は色の濃さで段階を示す）
+function drawStamps() {
+  ctx.save(); ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; ctx.font = `800 11px ${JP}`;
+  for (const st of stamps) {
+    if (!stampVisible(st)) continue;
+    const [x, y] = project(st.xy[0], st.xy[1]);
+    const label = isCong(st.kind) ? `混${st.kind.slice(2)}` : st.kind;
+    const w = ctx.measureText(label).width + 12;
+    const col = isCong(st.kind) ? ['#5eead4', '#a3e635', '#ffd84a', '#fb923c', '#f87171'][+st.kind.slice(2) - 1] : C.lilac;
+    ctx.beginPath(); ctx.ellipse(x, y, 7, 7 * TILT, 0, 0, 7); ctx.fillStyle = col; ctx.fill(); if (st.mine) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); }
+    ctx.beginPath(); ctx.roundRect(x - w / 2, y - 30, w, 18, 9);
+    ctx.fillStyle = col; ctx.fill();
+    ctx.fillStyle = C.ink; ctx.fillText(label, x, y - 20.5);
   }
   ctx.restore();
 }
@@ -475,25 +610,41 @@ function updateCompass() {
   $('compass').firstElementChild.style.transform = `rotate(${Math.atan2(x1 - x0, -(y1 - y0))}rad)`;
 }
 
-// ---------- 目的地の選択 ----------
+// ---------- 場所の選択(カード)と案内 ----------
 function select(poi, ev) {
-  state.dest = { poi, ev }; state.route = routeTo(poi); state.routeT0 = performance.now();
+  state.dest = { poi, ev }; state.route = null;
   $('q').value = ev.title; $('clear').hidden = false; $('results').hidden = true; $('q').blur();
-  $('cPlace').textContent = poi.name;
-  $('cTitle').textContent = ev.title;
-  $('cDesc').textContent = [ev.desc, ev.time].filter(Boolean).join('　');
-  $('cDesc').hidden = !$('cDesc').textContent;
-  const m = Math.round(state.route.len / 5) * 5;
-  $('cDist').innerHTML = `${m}<small>m</small>`;
-  $('cTime').textContent = `徒歩 ${Math.max(1, Math.round(state.route.len / 75))} 分`;
+  renderCard();
   $('card').classList.remove('off');
   setArLinks();
   showTab('map');
-  requestAnimationFrame(() => { placeCtrl(); fitRoute(); });
+  requestAnimationFrame(() => { placeCtrl(); focusPoi(poi); });
 }
+function renderCard() {
+  const { poi, ev } = state.dest, guiding = !!state.route;
+  $('noloc').style.display = 'none';
+  const m = Math.round(Math.hypot(...poi.xy) / 5) * 5;
+  $('cPlace').textContent = guiding ? `案内中・${poi.name}` : `${poi.name}・企画`;
+  $('cTitle').textContent = guiding ? `${ev.title}まで` : ev.title;
+  $('cDesc').textContent = guiding ? (POS_OK ? '10 秒前に更新・精度 ±8 m' : '') : [ev.desc, ev.time].filter(Boolean).join('　');
+  $('cDesc').hidden = !$('cDesc').textContent;
+  const dir = DIR8[Math.round(((Math.atan2(poi.xy[0], poi.xy[1]) / RAD + 360) % 360) / 45) % 8];
+  $('cDist').innerHTML = POS_OK ? `${m}<small>m</small>` : '';
+  $('cTime').textContent = POS_OK ? (guiding ? dir : '直線') : '';
+  $('tagRow').hidden = guiding;
+  $('cHere').hidden = guiding; $('cHere').disabled = !POS_OK; $('cHere').style.opacity = POS_OK ? '' : '.4';
+  $('cGo').hidden = !guiding; $('cStop').hidden = !guiding;
+  syncTagButtons();
+}
+function startGuide() {   // Destination.choose。行き先を決めたら、方角と距離が追加の操作なしで出る
+  if (!POS_OK || !state.dest) return;
+  state.route = routeTo(state.dest.poi); state.routeT0 = performance.now();
+  renderCard(); requestAnimationFrame(() => { placeCtrl(); fitRoute(); });
+}
+function focusPoi(poi) { goal.fx = poi.xy[0]; goal.fy = poi.xy[1]; goal.k = Math.max(goal.k, 2.2); goal.cy = defaultCy(); }
 function clearDest() {
   state.dest = null; state.route = null;
-  $('card').classList.add('off'); $('q').value = ''; $('clear').hidden = true;
+  $('card').classList.add('off'); $('q').value = ''; $('clear').hidden = true; $('noloc').style.display = '';
   setArLinks();
   placeCtrl(); goal.cy = defaultCy();
 }
@@ -520,7 +671,7 @@ setArLinks();
 
 // ---------- 検索 ----------
 const norm = (s) => s.toLowerCase().normalize('NFKC');
-const distOf = (poi) => Math.round(routeTo(poi).len / 5) * 5;
+const distOf = (poi) => Math.round(Math.hypot(...poi.xy) / 5) * 5;   // 現在地からの直線距離
 function rowHTML({ poi, ev }, i, inList = false) {
   const sub = [inList ? '' : poi.name, ev.desc, ev.time].filter(Boolean).join(' ・ ');
   return `<li><button class="row" data-i="${i}" type="button"><i class="dot${poi.b ? '' : ' out'}"></i><span><span class="t">${ev.title}</span>${sub ? `<span class="s">${sub}</span>` : ''}</span><span class="m">${distOf(poi)} m</span></button></li>`;
@@ -528,7 +679,7 @@ function rowHTML({ poi, ev }, i, inList = false) {
 function renderResults() {
   const q = norm($('q').value.trim());
   $('clear').hidden = !$('q').value;
-  const hits = items.map((it, i) => ({ it, i })).filter(({ it }) => !q || norm(`${it.ev.title} ${it.poi.name} ${it.ev.desc || ''}`).includes(q));
+  const hits = items.map((it, i) => ({ it, i })).filter(({ it }) => itemShown(it.poi, it.ev)).filter(({ it }) => !q || norm(`${it.ev.title} ${it.poi.name} ${it.ev.desc || ''}`).includes(q));
   $('results').innerHTML = hits.length ? hits.slice(0, 30).map(({ it, i }) => rowHTML(it, i)).join('') : '<li class="empty">該当する企画がありません</li>';
   $('results').hidden = false;
 }
@@ -541,9 +692,15 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.top')) $('results').hidden = true;
 });
 $('cClose').addEventListener('click', clearDest);
+$('cStop').addEventListener('click', clearDest);
+$('cHere').addEventListener('click', startGuide);
 
 // ---------- 企画一覧（左タブ） ----------
-$('list').innerHTML = pois.map((poi) => `<h3>${poi.name}</h3><ul>${poi.events.map((ev) => rowHTML({ poi, ev }, items.findIndex((x) => x.ev === ev), true)).join('')}</ul>`).join('');
+function renderList() {
+  const html = pois.filter(poiShown).map((poi) => `<h3>${poi.name}</h3><ul>${poi.events.filter((ev) => itemShown(poi, ev)).map((ev) => rowHTML({ poi, ev }, items.findIndex((x) => x.ev === ev), true)).join('')}</ul>`).join('');
+  $('list').innerHTML = html || '<p class="empty">該当する企画がありません</p>';
+}
+renderList();
 function showTab(name) {
   $('list').hidden = name !== 'list';
   $('tabList').toggleAttribute('aria-current', name === 'list');
@@ -611,23 +768,72 @@ cv.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.offsetX, e.of
 // タップした企画（吹き出し → 建物の屋上 → 屋外の円の順に判定）
 function tap(x, y) {
   const lab = labelHits.find(({ r }) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h);
-  if (lab) return select(lab.p, lab.p.events[0]);
+  if (lab) return select(lab.p, lab.p.events.find((e) => itemShown(lab.p, e)) || lab.p.events[0]);
   const front = blds.filter((b) => b.top).map((b) => ({ b, d: project(b.c[0], b.c[1])[2] })).sort((a, b) => a.d - b.d);
   for (const { b } of front) {
     const path = new Path2D(); b.top.forEach(([px, py], i) => (i ? path.lineTo(px, py) : path.moveTo(px, py))); path.closePath();
-    if (ctx.isPointInPath(path, x * dpr, y * dpr)) { if (b.poi) select(b.poi, b.poi.events[0]); return; }
+    if (ctx.isPointInPath(path, x * dpr, y * dpr)) { if (b.poi && poiShown(b.poi)) select(b.poi, b.poi.events.find((e) => itemShown(b.poi, e))); return; }
   }
   for (const p of pois) {
-    if (p.b) continue;
+    if (p.b || !poiShown(p)) continue;
     const [px, py] = project(p.xy[0], p.xy[1]);
-    if (Math.hypot(px - x, (py - y) / TILT) < 22) return select(p, p.events[0]);
+    if (Math.hypot(px - x, (py - y) / TILT) < 22) return select(p, p.events.find((e) => itemShown(p, e)));
   }
 }
+
+// ---------- 絞り込みとタグの操作 ----------
+function syncTagButtons() {
+  const d = state.dest;
+  $('tFav').setAttribute('aria-pressed', String(!!d && hasTag('fav', d.poi, d.ev)));
+}
+function toggleTag(t) {
+  const d = state.dest; if (!d) return;
+  const k = itemKey(d.poi, d.ev), i = tags[t].indexOf(k);
+  if (i < 0) tags[t].push(k); else tags[t].splice(i, 1);
+  store.set('nasvi.tags', tags); syncTagButtons(); renderList();
+}
+$('tFav').addEventListener('click', () => toggleTag('fav'));
+$('chips').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  if (b.dataset.fav) filtering.fav = !filtering.fav;   // Labeling.filter / clearFilter
+  else filtering.kind = filtering.kind === b.dataset.k ? null : b.dataset.k;
+  for (const c of $('chips').children) c.setAttribute('aria-pressed', String(c.dataset.fav ? filtering.fav : c.dataset.k === filtering.kind));
+  if (state.dest && !itemShown(state.dest.poi, state.dest.ev)) clearDest();
+  renderList(); if (!$('results').hidden) renderResults();
+});
+
+// ---------- スタンプの操作 ----------
+let toastT = 0;
+function toast(msg) { $('toast').textContent = msg; $('toast').hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { $('toast').hidden = true; }, 2200); }
+function renderSheet() {
+  $('sNote').textContent = POS_OK ? 'いまいる地点(精度 ±8 m)に押されます。他の来場者の地図に色の丸で出ます。' : '現在地が取れていないため押せません。位置の利用を許可してください。';
+  const dis = POS_OK ? '' : 'disabled';
+  $('kindsC').innerHTML = ['1', '2', '3', '4', '5'].map((n) => `<button class="kind" type="button" data-k="混雑${n}" ${dis}>${n}</button>`).join('');
+  $('kindsF').innerHTML = ['面白い', '美味しい', 'よさ'].map((k) => `<button class="kind" type="button" data-k="${k}" ${dis}>${k}</button>`).join('');
+  const mine = stamps.filter((x) => x.mine && stampVisible(x)).sort((a, b) => b.at - a.at);
+  $('stl').innerHTML = mine.map((st) => `<li><span class="k">${st.kind}</span><span class="a">${ago(st.at)}${isCong(st.kind) ? `・${STALE_MIN} 分で消えます` : ''}</span><button type="button" data-r="${st.id}">取り消す</button></li>`).join('') || '<li>まだ押していません</li>';
+}
+$('stampBtn').addEventListener('click', () => { renderSheet(); $('sheet').hidden = !$('sheet').hidden; });
+$('sheet').addEventListener('click', (e) => {
+  const k = e.target.closest('.kind'), r = e.target.closest('[data-r]');
+  if (k && POS_OK) {   // Stamp.press（現在地は模擬の (0,0)）
+    stamps.push({ id: `m${now()}`, kind: k.dataset.k, xy: [0, 0], at: now(), mine: true });
+    saveStamps(); renderSheet(); toast(`${k.dataset.k} を足元に押しました`);
+  }
+  if (r) {   // Stamp.retract（押した本人だけ）
+    const i = stamps.findIndex((x) => x.id === r.dataset.r && x.mine);
+    if (i >= 0) { stamps.splice(i, 1); saveStamps(); renderSheet(); }
+  }
+});
+cv.addEventListener('pointerdown', () => { $('sheet').hidden = true; });
 
 $('compass').addEventListener('click', () => { goal.th = TH0; });
 $('locate').addEventListener('click', () => { goal.fx = 0; goal.fy = 0; goal.k = W / 180; goal.th = TH0; goal.cy = defaultCy(); });
 
 addEventListener('resize', () => { resize(); placeCtrl(); });
+if (!POS_OK) { $('noloc').hidden = false; $('stampBtn').style.opacity = '.4'; }
+$('allow').addEventListener('click', () => { location.search = ''; });
+$('manual').addEventListener('click', () => toast('地図で指定する操作は未決です(OQ-2)'));
 resize(); placeCtrl();
 requestAnimationFrame(draw);
 </script>
