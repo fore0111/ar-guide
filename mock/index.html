@@ -124,7 +124,19 @@
     flex: 1; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
     background: var(--yel); color: var(--ink); font-size: 15px; font-weight: 800; text-decoration: none;
   }
-  .card .tags { display: flex; gap: 8px; margin-top: 10px; }
+  .fband { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding: 6px 6px 6px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--lilac); font-size: 12px; font-weight: 700; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+  .fband[hidden] { display: none; }
+  .fband button { height: 26px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 12px; color: var(--sub); }
+  .tlist { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+  .tlist .tagbtn { height: 38px; }
+  .newtag { display: flex; gap: 8px; margin-top: 12px; }
+  .newtag input { flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); font: 500 15px var(--jp); outline: 0; }
+  .newtag button { height: 40px; padding: 0 16px; border-radius: 10px; background: var(--lilac); color: var(--ink); font-weight: 800; }
+  .sheet .done { width: 100%; height: 44px; margin-top: 14px; border-radius: 12px; background: var(--yel); color: var(--ink); font-weight: 800; font-size: 15px; }
+  .empty .acts { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .empty .acts button { height: 40px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--text); }
+  .empty .acts button.pri { background: var(--yel); color: var(--ink); border: 0; }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .tagbtn { height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--sub); }
   .tagbtn[aria-pressed="true"] { background: rgba(167,139,250,.22); border-color: var(--lilac); color: var(--text); }
   .card .mode { font-size: 12px; color: var(--yel); font-weight: 700; }
@@ -209,13 +221,8 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
       </label>
-      <div class="chips" id="chips" role="group" aria-label="絞り込み">
-        <button class="chip" type="button" data-k="飲食" aria-pressed="false">飲食</button>
-        <button class="chip" type="button" data-k="展示" aria-pressed="false">展示</button>
-        <button class="chip" type="button" data-k="体験" aria-pressed="false">体験</button>
-        <button class="chip" type="button" data-k="ステージ" aria-pressed="false">ステージ</button>
-        <button class="chip" type="button" data-fav="1" aria-pressed="false">お気に入り</button>
-      </div>
+      <div class="chips" id="chips" role="group" aria-label="絞り込み"></div>
+      <div class="fband" id="fband" hidden><span id="fText"></span><button type="button" id="fClear">解除</button></div>
       <ul class="results" id="results" hidden></ul>
     </header>
 
@@ -246,9 +253,7 @@
         </div>
         <div class="dist"><b id="cDist"></b><span id="cTime"></span></div>
       </div>
-      <div class="tags" id="tagRow">
-        <button class="tagbtn" id="tFav" type="button" aria-pressed="false">お気に入り</button>
-      </div>
+      <div class="tags" id="tagRow"></div>
       <div class="act">
         <button class="go" id="cHere" type="button">ここへ向かう</button>
         <a class="go" id="cGo" href="../index.html" hidden>
@@ -274,6 +279,18 @@
       <div class="kinds three" id="kindsF"></div>
       <h4>自分が押したスタンプ</h4>
       <ul class="stl" id="stl"></ul>
+    </section>
+    <section class="sheet" id="tsheet" hidden aria-label="タグを付ける">
+      <h3>タグを付ける</h3>
+      <p class="note" id="tPlace"></p>
+      <h4>最初からあるタグ</h4>
+      <div class="tlist" id="tDefault"></div>
+      <h4>自分で作ったタグ</h4>
+      <div class="tlist" id="tCustom"></div>
+      <form class="newtag" id="newTag"><input id="newName" type="text" placeholder="新しいタグの名前" maxlength="20" autocomplete="off"><button type="submit">作る</button></form>
+      <p class="note">作ると、この場所に付きます。名前の決まり(文字数・重複)と上限は未定(OQ-13)</p>
+      <p class="note">タグは、この端末の中にだけ保存されます。アプリのデータを消したり、別の端末を使ったりすると、タグは消えます。</p>
+      <button class="done" id="tDone" type="button">完了</button>
     </section>
     <p class="toast" id="toast" hidden></p>
   </main>
@@ -329,11 +346,17 @@ const store = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
-const tags = store.get('nasvi.tags', { fav: [] });   // 「行きたい」は、ワイヤーフレームに無いため画面に出していない(要確認)   // 値は「場所 id:企画の番号」の配列
+const DEFAULT_TAGS = ['行きたい場所', 'お気に入り'];   // 最初からあるタグ(D-014)。自作のタグは、この後ろに足す
+const tags = (() => {   // タグ名 -> 「場所 id:企画の番号」の配列。各自の端末の中にだけ保存(API には載せない)
+  const t = store.get('nasvi.tags', {});
+  if (t.fav) { t['お気に入り'] = t.fav; delete t.fav; }
+  for (const n of DEFAULT_TAGS) t[n] = t[n] || [];
+  return t;
+})();
 const itemKey = (poi, ev) => `${poi.id}:${poi.events.indexOf(ev)}`;
-const hasTag = (t, poi, ev) => tags[t].includes(itemKey(poi, ev));
-const filtering = { kind: null, fav: false };   // 絞り込みステータス(種類は 1 つ、お気に入りは重ねがけ)
-const itemShown = (poi, ev) => (!filtering.kind || ev.kind === filtering.kind) && (!filtering.fav || hasTag('fav', poi, ev));
+const hasTag = (t, poi, ev) => (tags[t] || []).includes(itemKey(poi, ev));
+const filtering = { kind: null, tag: null };   // 絞り込みステータス(種類・タグを、それぞれ 1 つまで。重ねがけ)
+const itemShown = (poi, ev) => (!filtering.kind || ev.kind === filtering.kind) && (!filtering.tag || hasTag(filtering.tag, poi, ev));
 const poiShown = (poi) => poi.events.some((ev) => itemShown(poi, ev));
 
 // ---------- スタンプ（Stamp）。他の来場者の分は模擬データ。共有の保存先は未決(OQ-12) ----------
@@ -633,6 +656,14 @@ function renderCard() {
   $('cTime').textContent = POS_OK ? (guiding ? dir : '直線') : '';
   $('tagRow').hidden = guiding;
   $('cHere').hidden = guiding; $('cHere').disabled = !POS_OK; $('cHere').style.opacity = POS_OK ? '' : '.4';
+  const arrived = guiding && POS_OK && Math.hypot(...poi.xy) <= 20;   // 行き先まで 20 m 以内
+  if (arrived) {
+    $('cPlace').textContent = `行き先に着きました・${poi.name}`;
+    $('cTitle').textContent = ev.title;
+    $('cDesc').textContent = '建物の前に来ました(行き先まで 20 m 以内)'; $('cDesc').hidden = false;
+    $('cDist').innerHTML = ''; $('cTime').textContent = '';
+  }
+  $('cStop').textContent = arrived ? '案内を終える' : '案内をやめる';
   $('cGo').hidden = !guiding; $('cStop').hidden = !guiding;
   syncTagButtons();
 }
@@ -680,13 +711,18 @@ function renderResults() {
   const q = norm($('q').value.trim());
   $('clear').hidden = !$('q').value;
   const hits = items.map((it, i) => ({ it, i })).filter(({ it }) => itemShown(it.poi, it.ev)).filter(({ it }) => !q || norm(`${it.ev.title} ${it.poi.name} ${it.ev.desc || ''}`).includes(q));
-  $('results').innerHTML = hits.length ? hits.slice(0, 30).map(({ it, i }) => rowHTML(it, i)).join('') : '<li class="empty">該当する企画がありません</li>';
+  const label = [filtering.kind, filtering.tag].filter(Boolean).map((x) => `「${x}」`).join('');
+  $('results').innerHTML = hits.length ? hits.slice(0, 30).map(({ it, i }) => rowHTML(it, i)).join('') : `<li class="empty"><b>${q ? `「${$('q').value.trim()}」に一致する企画・場所はありません` : '該当する企画・場所はありません'}</b>${label ? `<br>${label}で絞り込み中です。解除すると、すべての企画・場所から探します。` : ''}<div class="acts">${label ? '<button type="button" class="pri" data-a="unfilter">絞り込みを解除して探す</button>' : ''}<button type="button" data-a="again">別の言葉で探す</button><button type="button" data-a="list">一覧から探す</button></div></li>`;
   $('results').hidden = false;
 }
 $('q').addEventListener('focus', renderResults);
 $('q').addEventListener('input', renderResults);
 $('clear').addEventListener('click', () => { clearDest(); $('q').focus(); });
 document.addEventListener('click', (e) => {
+  const act = e.target.closest('[data-a]')?.dataset.a;
+  if (act === 'unfilter') { clearFilter(); renderResults(); return; }
+  if (act === 'again') { $('q').value = ''; $('q').focus(); renderResults(); return; }
+  if (act === 'list') { $('results').hidden = true; showTab('list'); return; }
   const row = e.target.closest('.row');
   if (row) { const it = items[+row.dataset.i]; select(it.poi, it.ev); return; }
   if (!e.target.closest('.top')) $('results').hidden = true;
@@ -782,25 +818,66 @@ function tap(x, y) {
 }
 
 // ---------- 絞り込みとタグの操作 ----------
-function syncTagButtons() {
-  const d = state.dest;
-  $('tFav').setAttribute('aria-pressed', String(!!d && hasTag('fav', d.poi, d.ev)));
+const KIND_CHIPS = ['飲食', '展示', '体験', 'ステージ'];
+function renderChips() {
+  const names = Object.keys(tags);
+  $('chips').innerHTML = KIND_CHIPS.map((k) => `<button class="chip" type="button" data-k="${k}" aria-pressed="${filtering.kind === k}">${k}</button>`).join('')
+    + names.map((n) => `<button class="chip" type="button" data-t="${n}" aria-pressed="${filtering.tag === n}">${n}</button>`).join('');
+  const on = filtering.kind || filtering.tag;
+  $('fband').hidden = !on;
+  if (on) {
+    const n = items.filter((it) => itemShown(it.poi, it.ev)).length;
+    $('fText').textContent = `${[filtering.kind, filtering.tag].filter(Boolean).map((x) => `「${x}」`).join('')}で絞り込み中・${n} 件`;
+  }
 }
-function toggleTag(t) {
-  const d = state.dest; if (!d) return;
-  const k = itemKey(d.poi, d.ev), i = tags[t].indexOf(k);
-  if (i < 0) tags[t].push(k); else tags[t].splice(i, 1);
-  store.set('nasvi.tags', tags); syncTagButtons(); renderList();
+function applyFilter() {
+  renderChips(); renderList();
+  if (state.dest && !itemShown(state.dest.poi, state.dest.ev)) clearDest();
+  if (!$('results').hidden) renderResults();
 }
-$('tFav').addEventListener('click', () => toggleTag('fav'));
+function clearFilter() { filtering.kind = filtering.tag = null; applyFilter(); }   // Labeling.clearFilter
 $('chips').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
-  if (b.dataset.fav) filtering.fav = !filtering.fav;   // Labeling.filter / clearFilter
+  if (b.dataset.t) filtering.tag = filtering.tag === b.dataset.t ? null : b.dataset.t;   // Labeling.filter
   else filtering.kind = filtering.kind === b.dataset.k ? null : b.dataset.k;
-  for (const c of $('chips').children) c.setAttribute('aria-pressed', String(c.dataset.fav ? filtering.fav : c.dataset.k === filtering.kind));
-  if (state.dest && !itemShown(state.dest.poi, state.dest.ev)) clearDest();
-  renderList(); if (!$('results').hidden) renderResults();
+  applyFilter();
 });
+$('fClear').addEventListener('click', clearFilter);
+
+function renderTagRow() {
+  const d = state.dest; if (!d) return;
+  $('tagRow').innerHTML = DEFAULT_TAGS.map((n) => `<button class="tagbtn" type="button" data-tg="${n}" aria-pressed="${hasTag(n, d.poi, d.ev)}">${n}</button>`).join('')
+    + '<button class="tagbtn" type="button" data-more="1">＋ タグ</button>';
+}
+function syncTagButtons() { renderTagRow(); }
+function toggleTag(t) {   // Labeling.attach / detach
+  const d = state.dest; if (!d) return;
+  const k = itemKey(d.poi, d.ev), a = tags[t], i = a.indexOf(k);
+  if (i < 0) a.push(k); else a.splice(i, 1);
+  store.set('nasvi.tags', tags); renderTagRow(); renderTagSheet(); applyFilter();
+}
+$('tagRow').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.more) { renderTagSheet(); $('tsheet').hidden = false; } else toggleTag(b.dataset.tg);
+});
+function renderTagSheet() {
+  const d = state.dest; if (!d) return;
+  $('tPlace').textContent = d.ev.title;
+  const btn = (n) => `<button class="tagbtn" type="button" data-tg="${n}" aria-pressed="${hasTag(n, d.poi, d.ev)}">${n}</button>`;
+  $('tDefault').innerHTML = DEFAULT_TAGS.map(btn).join('');
+  const custom = Object.keys(tags).filter((n) => !DEFAULT_TAGS.includes(n));
+  $('tCustom').innerHTML = custom.map(btn).join('') || '<span class="note">まだありません</span>';
+}
+$('tsheet').addEventListener('click', (e) => { const b = e.target.closest('[data-tg]'); if (b) toggleTag(b.dataset.tg); });
+$('newTag').addEventListener('submit', (e) => {   // Labeling.defineFor + attach(仮置き: 名前の決まりは OQ-13)
+  e.preventDefault();
+  const n = $('newName').value.trim(), d = state.dest;
+  if (!n || !d) return;
+  if (!tags[n]) tags[n] = [];
+  const k = itemKey(d.poi, d.ev); if (!tags[n].includes(k)) tags[n].push(k);
+  store.set('nasvi.tags', tags); $('newName').value = ''; renderTagRow(); renderTagSheet(); applyFilter();
+});
+$('tDone').addEventListener('click', () => { $('tsheet').hidden = true; });
 
 // ---------- スタンプの操作 ----------
 let toastT = 0;
@@ -825,12 +902,13 @@ $('sheet').addEventListener('click', (e) => {
     if (i >= 0) { stamps.splice(i, 1); saveStamps(); renderSheet(); }
   }
 });
-cv.addEventListener('pointerdown', () => { $('sheet').hidden = true; });
+cv.addEventListener('pointerdown', () => { $('sheet').hidden = true; $('tsheet').hidden = true; });
 
 $('compass').addEventListener('click', () => { goal.th = TH0; });
 $('locate').addEventListener('click', () => { goal.fx = 0; goal.fy = 0; goal.k = W / 180; goal.th = TH0; goal.cy = defaultCy(); });
 
 addEventListener('resize', () => { resize(); placeCtrl(); });
+renderChips();
 if (!POS_OK) { $('noloc').hidden = false; $('stampBtn').style.opacity = '.4'; }
 $('allow').addEventListener('click', () => { location.search = ''; });
 $('manual').addEventListener('click', () => toast('地図で指定する操作は未決です(OQ-2)'));
